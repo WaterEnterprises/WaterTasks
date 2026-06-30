@@ -1,14 +1,20 @@
 # Water Tasks
 
-A cross-platform gamified task management app that turns your to-do list into a focus-driven productivity system.
+[![Build & Release](https://github.com/WaterEnterprises/WaterTasks/actions/workflows/CI.yml/badge.svg)](https://github.com/WaterEnterprises/WaterTasks/actions/workflows/CI.yml)
 
-[![Build & Release](https://github.com/YOUR_USERNAME/water_tasks/actions/workflows/CI.yml/badge.svg)](https://github.com/YOUR_USERNAME/water_tasks/actions/workflows/CI.yml)
+Water Tasks is a cross-platform desktop and mobile app built for knowledge workers, students, and anyone who struggles with sustained focus. It combines the structure of task management with a check-in-based accountability system that runs during your work session — turning the abstract goal of "staying focused" into a concrete, measurable practice.
 
----
+## Executive Summary
 
-## Overview
+**Concept.** Water Tasks is built on a simple premise: planning what to do and proving you're doing it are two different things. Most productivity apps handle the first (to-do lists, calendars) but ignore the second. Water Tasks bridges this gap with a focus session system that periodically asks you to confirm you're still working — and tracks whether you do.
 
-Water Tasks helps you stay focused by combining task management with a check-in based focus timer. Create task lists, add tasks, and start a focus session. The screen becomes a full-screen colored overlay that pulses, and you must periodically tap to confirm you're still working. Miss a check-in and the app asks if you're still on task. All data is stored locally with SQLite.
+**How it works.** You create task lists (e.g., Work, Study, Chores), add tasks under them, and start a focus session on any task. The app enters a full-screen overlay that pulses at a configurable interval. When a check-in is due, the overlay flashes, a notification fires, and you must tap to confirm you're working. Miss the check-in and the app prompts you to refocus. All sessions, completions, and streaks are logged locally.
+
+**Why it's different.**
+- **Accountability as a feature, not an afterthought.** The check-in mechanism creates lightweight, recurring commitment points throughout a work session. It's harder to drift into distraction when you know the next check-in is seconds away.
+- **Gamified progress.** Streaks, focus time totals, and completion stats turn deep work into a measurable game. The dashboard shows daily trends, task breakdowns, and personal records.
+- **Private by default.** Everything is stored in a local SQLite database. No accounts, no servers, no data collection.
+- **Cross-platform, native feel.** Built with Flutter and Material Design 3, it runs on Windows, macOS, Linux, Android, and iOS with a consistent experience.
 
 **Supported platforms:** Windows, macOS, Linux, Android, iOS
 
@@ -24,17 +30,6 @@ Water Tasks helps you stay focused by combining task management with a check-in 
 - **SQLite Local Storage** — All data stays on-device, no account needed
 - **Light & Dark Mode** — Follows system theme automatically
 - **Material 3** — Modern Material Design 3 UI
-
----
-
-## Screenshots
-
-| Home | Task List | Focus Overlay | Dashboard |
-|------|-----------|---------------|-----------|
-| ![Home](screenshots/home.png) | ![Detail](screenshots/detail.png) | ![Overlay](screenshots/overlay.png) | ![Dashboard](screenshots/dashboard.png) |
-
-*(Add actual screenshots to a `screenshots/` folder)*
-
 ---
 
 ## Architecture
@@ -74,53 +69,6 @@ SQLite via `sqflite` with three tables:
 - **sessions** — id, task_id (FK), start_time, end_time, duration_seconds, check_in_count
 
 Foreign keys enforce cascade deletes.
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- Flutter SDK ^3.10.4 ([install guide](https://flutter.dev/docs/get-started/install))
-- Platform-specific tooling:
-  - **Windows** — Visual Studio 2022 with "Desktop development with C++"
-  - **macOS** — Xcode 15+
-  - **Linux** — `ninja-build`, `libgtk-3-dev`, `cmake`
-  - **Android** — Android Studio, Android SDK 21+
-  - **iOS** — Xcode, Apple Developer account for device deployment
-
-### Setup
-
-```bash
-# Clone the repo
-git clone https://github.com/WaterEnpterprises/water_tasks.git
-cd water_tasks
-
-# Get dependencies
-flutter pub get
-
-# Run for your platform
-flutter run -d windows   # Windows
-flutter run -d macos     # macOS
-flutter run -d linux     # Linux
-flutter run -d android   # Android (emulator or device)
-flutter run -d ios       # iOS (simulator or device)
-
-# Or use the ADB install script (Android device connected via USB)
-.\scripts\install.ps1           # debug build
-.\scripts\install.ps1 -BuildMode release  # release build
-```
-
-### Build for Release
-
-```bash
-flutter build windows --release   # Windows
-flutter build macos --release     # macOS
-flutter build linux --release     # Linux
-flutter build apk --release       # Android
-flutter build ios --release       # iOS
-flutter build web --release       # Web
-```
 
 ---
 
