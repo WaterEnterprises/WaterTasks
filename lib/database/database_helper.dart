@@ -277,7 +277,7 @@ class DatabaseHelper {
   }
 
   Map<int, int> _calculateStreaks(List<DateTime> days) {
-    if (days.isEmpty) return {1: 0};
+    if (days.isEmpty) return {1: 0, 2: 0};
     final unique = days.map((d) => DateTime(d.year, d.month, d.day)).toSet().toList()
       ..sort((a, b) => b.compareTo(a));
     int current = 0;

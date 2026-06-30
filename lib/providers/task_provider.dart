@@ -3,9 +3,12 @@ import '../database/database_helper.dart';
 import '../models/task_list_model.dart';
 import '../models/task_model.dart';
 import '../models/session_model.dart';
+import '../services/background_notification_service.dart';
+import '../services/system_tray_service.dart';
 
 class TaskProvider extends ChangeNotifier {
   final DatabaseHelper _db = DatabaseHelper();
+  final BackgroundNotificationService _notif = BackgroundNotificationService();
 
   List<TaskListModel> _taskLists = [];
   List<TaskModel> _currentTasks = [];
@@ -92,6 +95,14 @@ class TaskProvider extends ChangeNotifier {
           (l) => l.id == _activeTask!.listId,
           orElse: () => lists.first,
         );
+        await _notif.showSessionNotification(_activeTask!.title);
+        await _notif.scheduleCheckInAlarm(
+          _activeTask!.title,
+          _activeTaskList!.checkInIntervalSeconds,
+        );
+        try {
+          await SystemTrayService().setSessionActive(_activeTask!.title);
+        } catch (_) {}
       }
     }
     notifyListeners();
@@ -104,6 +115,11 @@ class TaskProvider extends ChangeNotifier {
     _activeSession = session.copyWith(id: id);
     _activeTask = task;
     _activeTaskList = taskList;
+    await _notif.showSessionNotification(task.title);
+    await _notif.scheduleCheckInAlarm(task.title, taskList.checkInIntervalSeconds);
+    try {
+      await SystemTrayService().setSessionActive(task.title);
+    } catch (_) {}
     notifyListeners();
   }
 
@@ -117,6 +133,16 @@ class TaskProvider extends ChangeNotifier {
       lastCheckInTime: now,
     );
     await _db.updateSession(_activeSession!);
+    if (_activeTask != null && _activeTaskList != null) {
+      await _notif.updateSessionNotification(
+        _activeTask!.title,
+        'Check-in ${_activeSession!.checkInCount} — next in ${_activeTaskList!.checkInIntervalSeconds}s',
+      );
+      await _notif.scheduleCheckInAlarm(
+        _activeTask!.title,
+        _activeTaskList!.checkInIntervalSeconds,
+      );
+    }
     notifyListeners();
   }
 
@@ -139,6 +165,10 @@ class TaskProvider extends ChangeNotifier {
       durationSeconds: elapsed,
     );
     await _db.updateSession(_activeSession!);
+    await _notif.cancelAll();
+    try {
+      await SystemTrayService().clearSession();
+    } catch (_) {}
     _activeSession = null;
     _activeTask = null;
     _activeTaskList = null;

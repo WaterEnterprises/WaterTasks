@@ -4,9 +4,12 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/task_provider.dart';
 import '../services/notification_service.dart';
+import '../services/background_notification_service.dart';
+import '../widgets/glass_card.dart';
 
 class FocusScreen extends StatefulWidget {
-  const FocusScreen({super.key});
+  final bool fromNotification;
+  const FocusScreen({super.key, this.fromNotification = false});
 
   @override
   State<FocusScreen> createState() => _FocusScreenState();
@@ -52,6 +55,18 @@ class _FocusScreenState extends State<FocusScreen>
     );
 
     _startTickTimer();
+
+    // Check immediately if check-in is already due when screen opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.fromNotification) {
+        _triggerCheckInDue();
+      } else {
+        final remaining = context.read<TaskProvider>().computeSecondsRemaining();
+        if (remaining <= 0 && !_checkInDue) {
+          _triggerCheckInDue();
+        }
+      }
+    });
   }
 
   @override
@@ -60,6 +75,7 @@ class _FocusScreenState extends State<FocusScreen>
     _pulseController.dispose();
     _blinkController.dispose();
     _tickTimer?.cancel();
+    NotificationService().stopSiren();
     super.dispose();
   }
 
@@ -92,18 +108,22 @@ class _FocusScreenState extends State<FocusScreen>
       _checkInCount = count;
       if (remaining <= 0 && !_checkInDue && !_isDialogOpen) {
         _triggerCheckInDue();
-      } else if (remaining > 0 && _checkInDue) {
-        _resetCheckIn();
       }
     });
   }
 
   void _triggerCheckInDue() {
+    _tickTimer?.cancel();
+    _tickTimer = null;
     _checkInDue = true;
     _blinkController.repeat(reverse: true);
     _pulseController.repeat(reverse: true);
     HapticFeedback.heavyImpact();
-    NotificationService().playCheckInSound();
+    NotificationService().startSiren();
+    final task = context.read<TaskProvider>().activeTask;
+    if (task != null) {
+      BackgroundNotificationService().startBuzzing(task.title);
+    }
   }
 
   void _resetCheckIn() {
@@ -112,15 +132,20 @@ class _FocusScreenState extends State<FocusScreen>
     _blinkController.reset();
     _pulseController.stop();
     _pulseController.reset();
+    NotificationService().stopSiren();
+    BackgroundNotificationService().stopBuzzing();
   }
 
   void _handleCheckIn() {
+    _resetCheckIn();
     context.read<TaskProvider>().checkIn();
+    _startTickTimer();
     _recalculateCheckIn();
   }
 
   Future<void> _stopSession() async {
     _tickTimer?.cancel();
+    NotificationService().stopSiren();
     await context.read<TaskProvider>().stopTask();
   }
 
@@ -135,13 +160,20 @@ class _FocusScreenState extends State<FocusScreen>
     final progressController = TextEditingController();
     final result = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(task.title),
-        content: SingleChildScrollView(
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: GlassCard(
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Text(
+                task.title,
+                style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
               if (task.description != null && task.description!.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16),
@@ -152,6 +184,7 @@ class _FocusScreenState extends State<FocusScreen>
                         ),
                   ),
                 ),
+              const SizedBox(height: 8),
               Text(
                 'What is your progress?',
                 style: Theme.of(ctx).textTheme.titleMedium,
@@ -161,51 +194,29 @@ class _FocusScreenState extends State<FocusScreen>
                 controller: progressController,
                 decoration: const InputDecoration(
                   hintText: 'Describe what you\'ve done...',
-                  border: OutlineInputBorder(),
                 ),
                 maxLines: 3,
                 autofocus: true,
               ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(ctx, 'continue'),
+                  child: const Text('Continue working'),
+                ),
+              ),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, 'continue'),
-            child: const Text('Continue'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, 'done'),
-            child: const Text('Mark as Done'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(ctx, 'stop'),
-            child: const Text('Stop Session'),
-          ),
-        ],
       ),
     );
 
     _isDialogOpen = false;
 
-    if (result == null || result == 'continue') {
+    if (result == 'continue') {
       _handleCheckIn();
-      return;
-    }
-
-    if (result == 'done') {
-      if (task.id != null) {
-        await provider.toggleTaskComplete(task);
-      }
-      await _stopSession();
-      if (mounted) Navigator.pop(context);
-      return;
-    }
-
-    if (result == 'stop') {
-      await _stopSession();
-      if (mounted) Navigator.pop(context);
     }
   }
 
@@ -214,22 +225,45 @@ class _FocusScreenState extends State<FocusScreen>
     final elapsed = provider.activeSession?.durationSeconds ?? 0;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('End Session?'),
-        content: Text(
-          'You\'ve been focusing for ${_formatDuration(elapsed)}.',
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: GlassCard(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'End Session?',
+                style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'You\'ve been focusing for ${_formatDuration(elapsed)}.',
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.redAccent,
+                    ),
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('End Session'),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('End Session'),
-          ),
-        ],
       ),
     );
     return confirmed ?? false;
@@ -254,7 +288,10 @@ class _FocusScreenState extends State<FocusScreen>
     final provider = context.watch<TaskProvider>();
     final task = provider.activeTask;
     final taskList = provider.activeTaskList;
-    final color = taskList != null ? Color(taskList.color) : const Color(0xFF2196F3);
+    final color = taskList != null
+        ? Color(taskList.color)
+        : const Color(0xFF00E5FF);
+    final colors = Theme.of(context).colorScheme;
 
     if (!provider.hasActiveSession) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -265,8 +302,7 @@ class _FocusScreenState extends State<FocusScreen>
 
     return PopScope(
       canPop: false,
-      // ignore: deprecated_member_use
-      onPopInvoked: (didPop) async {
+      onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
         await _handlePopRequest();
       },
@@ -274,105 +310,126 @@ class _FocusScreenState extends State<FocusScreen>
         appBar: AppBar(
           title: Text(task?.title ?? 'Focus'),
           centerTitle: true,
-          backgroundColor: color.withValues(alpha: 0.15),
           leading: IconButton(
             icon: const Icon(Icons.close),
             onPressed: _handlePopRequest,
           ),
-          actions: [
-            TextButton(
-              onPressed: _handlePopRequest,
-              child: const Text('End'),
-            ),
-          ],
         ),
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Theme.of(context).colorScheme.surface,
-                Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.25),
-              ],
-            ),
-          ),
-          child: SafeArea(
-            child: Column(
-              children: [
-                const Spacer(flex: 1),
-
-                // Task info
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    children: [
-                      Text(
-                        task?.title ?? '',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                        textAlign: TextAlign.center,
+        body: SafeArea(
+          child: Column(
+            children: [
+              const Spacer(flex: 1),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  children: [
+                    Text(
+                      task?.title ?? '',
+                      style: Theme.of(context)
+                          .textTheme
+                          .headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.w600),
+                      textAlign: TextAlign.center,
+                    ),
+                    if (task?.description != null &&
+                        task!.description!.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          task.description!,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(
+                                color: colors.onSurfaceVariant,
+                              ),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
-                      if (task?.description != null &&
-                          task!.description!.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            task.description!,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                    ],
-                  ),
+                  ],
                 ),
-
-                const Spacer(flex: 1),
-
-                // Timer circle
-                AnimatedBuilder(
-                  animation: _pulseController,
-                  builder: (ctx, _) {
-                    return Transform.scale(
-                      scale: _checkInDue ? _scaleAnimation.value : 1.0,
-                      child: Container(
-                        width: 220,
-                        height: 220,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: color.withValues(
-                              alpha: _checkInDue ? 0.2 : 0.08),
-                          border: Border.all(
+              ),
+              const Spacer(flex: 1),
+              AnimatedBuilder(
+                animation: _pulseController,
+                builder: (ctx, _) {
+                  return Transform.scale(
+                    scale: _checkInDue ? _scaleAnimation.value : 1.0,
+                    child: GlassContainer(
+                      width: 220,
+                      height: 220,
+                      borderRadius: BorderRadius.circular(110),
+                      opacity: _checkInDue ? 0.15 : 0.06,
+                      blurSigma: 12,
+                      borderColor: _checkInDue
+                          ? accentBlue.withValues(alpha: 0.8)
+                          : color.withValues(alpha: 0.3),
+                      borderWidth: _checkInDue ? 3 : 2,
+                      boxShadow: _checkInDue
+                          ? [
+                              BoxShadow(
+                                color: accentBlue.withValues(alpha: 0.35),
+                                blurRadius: 30,
+                                spreadRadius: 6,
+                              ),
+                            ]
+                          : null,
+                      child: Center(
+                        child: Text(
+                          _formatDuration(
+                              _checkInDue ? 0 : _secondsRemaining),
+                          style: TextStyle(
+                            fontSize: 56,
+                            fontWeight: FontWeight.w200,
+                            fontFamily: 'monospace',
                             color: _checkInDue
-                                ? Colors.yellowAccent.withValues(alpha: 0.8)
-                                : color.withValues(alpha: 0.3),
-                            width: _checkInDue ? 3 : 2,
+                                ? accentBlue
+                                : colors.onSurface,
                           ),
-                          boxShadow: _checkInDue
-                              ? [
-                                  BoxShadow(
-                                    color: Colors.yellowAccent
-                                        .withValues(alpha: 0.3),
-                                    blurRadius: 24,
-                                    spreadRadius: 4,
-                                  ),
-                                ]
-                              : null,
                         ),
-                        child: Center(
-                          child: Text(
-                            _formatDuration(
-                                _checkInDue ? 0 : _secondsRemaining),
-                            style: TextStyle(
-                              fontSize: 56,
-                              fontWeight: FontWeight.w200,
-                              fontFamily: 'monospace',
-                              color: _checkInDue
-                                  ? Colors.yellowAccent
-                                  : Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Check-in $_checkInCount',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colors.outline,
+                    ),
+              ),
+              const Spacer(flex: 2),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: AnimatedBuilder(
+                  animation:
+                      Listenable.merge([_pulseController, _blinkController]),
+                  builder: (ctx, _) {
+                    final opacity =
+                        _checkInDue ? _opacityAnimation.value : 0.4;
+                    return Opacity(
+                      opacity: opacity,
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: FilledButton.icon(
+                          style: FilledButton.styleFrom(
+                            backgroundColor:
+                                _checkInDue ? accentBlue : color,
+                            foregroundColor: Colors.black,
+                          ),
+                          onPressed: _checkInDue ? _onCheckInTap : null,
+                          icon: Icon(
+                            _checkInDue
+                                ? Icons.notifications_active_rounded
+                                : Icons.touch_app_rounded,
+                          ),
+                          label: Text(
+                            _checkInDue ? "I'M WORKING ON THIS" : 'Working on this',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
@@ -380,78 +437,24 @@ class _FocusScreenState extends State<FocusScreen>
                     );
                   },
                 ),
-
-                const SizedBox(height: 12),
-
-                // Check-in count
-                Text(
-                  'Check-in $_checkInCount',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.outline,
-                      ),
+              ),
+              const SizedBox(height: 24),
+              TextButton.icon(
+                onPressed: _handlePopRequest,
+                icon: Icon(Icons.stop_circle_outlined,
+                    color: Colors.red.shade300),
+                label: Text(
+                  'End Session',
+                  style: TextStyle(color: Colors.red.shade300, fontSize: 16),
                 ),
-
-                const Spacer(flex: 2),
-
-                // Check-in button
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
-                  child: AnimatedBuilder(
-                    animation:
-                        Listenable.merge([_pulseController, _blinkController]),
-                    builder: (ctx, _) {
-                      final opacity =
-                          _checkInDue ? _opacityAnimation.value : 0.4;
-                      return Opacity(
-                        opacity: opacity,
-                        child: SizedBox(
-                          width: double.infinity,
-                          height: 56,
-                          child: FilledButton.icon(
-                            style: FilledButton.styleFrom(
-                              backgroundColor:
-                                  _checkInDue ? Colors.amber : color,
-                            ),
-                            onPressed: _checkInDue ? _onCheckInTap : null,
-                            icon: Icon(
-                              _checkInDue
-                                  ? Icons.notifications_active_rounded
-                                  : Icons.touch_app_rounded,
-                            ),
-                            label: Text(
-                              _checkInDue ? 'CHECK IN NOW' : 'Check In',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // End session
-                TextButton.icon(
-                  onPressed: _handlePopRequest,
-                  icon: Icon(Icons.stop_circle_outlined,
-                      color: Colors.red.shade300),
-                  label: Text(
-                    'End Session',
-                    style: TextStyle(
-                        color: Colors.red.shade300, fontSize: 16),
-                  ),
-                ),
-
-                const SizedBox(height: 32),
-              ],
-            ),
+              ),
+              const SizedBox(height: 32),
+            ],
           ),
         ),
       ),
     );
   }
 }
+
+const Color accentBlue = Color(0xFF00E5FF);

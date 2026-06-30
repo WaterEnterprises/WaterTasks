@@ -93,7 +93,7 @@ Foreign keys enforce cascade deletes.
 
 ```bash
 # Clone the repo
-git clone https://github.com/YOUR_USERNAME/water_tasks.git
+git clone https://github.com/WaterEnpterprises/water_tasks.git
 cd water_tasks
 
 # Get dependencies

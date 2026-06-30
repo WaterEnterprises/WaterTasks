@@ -46,10 +46,11 @@ Write-Host "  Device: $device" -ForegroundColor Green
 
 # ----------------------------------------------------------------
 Step "Building Flutter APK ($BuildMode mode)"
-Set-Location $RootDir
+Push-Location $RootDir
 $buildCmd = "flutter build apk --$BuildMode"
 Write-Host "  Running: $buildCmd"
 $result = Invoke-Expression $buildCmd
+Pop-Location
 if ($LASTEXITCODE -ne 0) {
   Die "Flutter build failed."
 }
@@ -91,8 +92,20 @@ Write-Host "  Installed successfully." -ForegroundColor Green
 # ----------------------------------------------------------------
 Step "Launching app"
 & adb -s $device shell am start -n "$AppId/.MainActivity" 2>&1
-Write-Host "  App launched. Tailing logcat (Ctrl+C to stop)..." -ForegroundColor Green
+Start-Sleep -Seconds 2
 
-# Tail filtered logcat output
-& adb -s $device logcat --pid=$(& adb -s $device shell pidof -s $AppId 2>$null) -v brief 2>&1
-cd scripts
+# Retry getting PID until the process is alive
+$appPid = $null
+for ($i = 0; $i -lt 5; $i++) {
+  $appPid = & adb -s $device shell pidof -s $AppId 2>$null
+  if ($appPid) { break }
+  Start-Sleep -Seconds 1
+}
+
+if (-not $appPid) {
+  Warn "Could not find PID for $AppId. Logcat tail skipped."
+  exit 0
+}
+
+Write-Host "  App launched (PID: $appPid). Tailing logcat (Ctrl+C to stop)..." -ForegroundColor Green
+& adb -s $device logcat --pid=$appPid -v brief 2>&1
