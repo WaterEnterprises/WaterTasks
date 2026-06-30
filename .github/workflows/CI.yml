@@ -482,8 +482,10 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v3.0.1
         with:
-          tag_name: v${{ env.APP_VERSION }}
-          name: Release v${{ env.APP_VERSION }}
+          tag_name: v${{ env.APP_VERSION }}+${{ github.run_number }}
+          name: Release v${{ env.APP_VERSION }} (build ${{ github.run_number }})
+          body: |
+            Automated build from commit ${{ github.sha }} (${{ github.run_number }}).
           files: |
             *.apk
             *.aab
@@ -493,3 +495,4 @@ jobs:
             *.AppImage
           draft: false
           prerelease: false
+          make_latest: true
