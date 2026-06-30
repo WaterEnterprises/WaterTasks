@@ -57,7 +57,7 @@ android {
             // Use the release signing config when credentials are available.
             // Falls back to debug signing for local development if no key.properties exists.
             signingConfig = if (keystorePropertiesFile.exists() ||
-                System.getenv("CI") == "true") {
+                (System.getenv("CI") == "true" && file("upload-keystore.jks").exists())) {
                 signingConfigs["release"]
             } else {
                 signingConfigs.getByName("debug")
