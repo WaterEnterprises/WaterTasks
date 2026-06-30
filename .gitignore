@@ -1,2 +1,26 @@
-*.cfg
-*.terabox.uploading.cfg
+# Flutter
+.flutter-plugins
+.flutter-plugins-dependencies
+.dart_tool/
+.packages
+build/
+
+# Android
+*.iml
+.idea/
+.gradle/
+local.properties
+
+# iOS
+ios/.symlinks/
+ios/Pods/
+ios/Runner.xcworkspace/xcuserdata/
+
+# macOS
+macos/.symlinks/
+macos/Pods/
+macos/Runner.xcworkspace/xcuserdata/
+
+# Signing — DO NOT COMMIT
+upload-keystore.jks
+key.properties
