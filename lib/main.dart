@@ -47,6 +47,7 @@ ColorScheme _buildColorScheme() {
 ThemeData _buildTheme() {
   final colorScheme = _buildColorScheme();
   return ThemeData(
+    fontFamily: 'NeueFrutigerWorld',
     colorScheme: colorScheme,
     useMaterial3: true,
     scaffoldBackgroundColor: Colors.transparent,
