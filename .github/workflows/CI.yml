@@ -163,7 +163,7 @@ jobs:
       - name: Package .app as ZIP
         run: |
           cd build/macos/Build/Products/Release
-          zip -r ../../../../app-macOS.zip Water\ Tasks.app
+          zip -r ../../../../app-macOS.zip app.app
 
       - uses: actions/upload-artifact@v7.0.1
         with:
@@ -188,7 +188,8 @@ jobs:
       - name: Install Linux Dependencies
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y ninja-build libgtk-3-dev file
+          sudo apt-get install -y ninja-build libgtk-3-dev file \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
 
       - name: Build Linux x64
         run: flutter build linux --release
@@ -263,17 +264,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.0
 
-      - uses: subosito/flutter-action@v2.23.0
+      - uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
-          cache: true
+          channel: master
 
       - run: flutter pub get
 
       - name: Install Linux Dependencies
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y ninja-build libgtk-3-dev file
+          sudo apt-get install -y ninja-build libgtk-3-dev file \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
 
       - name: Build Linux arm64
         run: flutter build linux --release
@@ -383,10 +384,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.0
 
-      - uses: subosito/flutter-action@v2.23.0
+      - uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
-          cache: true
+          channel: master
 
       - run: flutter pub get
 
