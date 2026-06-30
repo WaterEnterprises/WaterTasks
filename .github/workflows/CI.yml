@@ -250,7 +250,7 @@ jobs:
           "
           cp AppDir/usr/share/icons/hicolor/256x256/apps/$APP.png AppDir/$APP.png
 
-          ./appimagetool/AppRun AppDir WaterTasks-$ARCH-$VERSION.AppImage
+          ./appimagetool/AppRun AppDir WaterTasks-Linux-$ARCH-$VERSION.AppImage
 
       - uses: actions/upload-artifact@v7.0.1
         with:
@@ -333,7 +333,7 @@ jobs:
           "
           cp AppDir/usr/share/icons/hicolor/256x256/apps/$APP.png AppDir/$APP.png
 
-          ./appimagetool/AppRun AppDir WaterTasks-$ARCH-$VERSION.AppImage
+          ./appimagetool/AppRun AppDir WaterTasks-Linux-$ARCH-$VERSION.AppImage
 
       - uses: actions/upload-artifact@v7.0.1
         with:

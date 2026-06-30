@@ -1,6 +1,6 @@
 #define MyAppName "Water Tasks"
 #define MyAppPublisher "Water Tasks"
-#define MyAppURL "https://github.com/YOUR_USERNAME/water_tasks"
+#define MyAppURL "https://github.com/WaterEnterprises/WaterTasks"
 #define MyAppExeName "water_tasks.exe"
 
 [Setup]
@@ -15,7 +15,7 @@ DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir={#MyOutputDir}
-OutputBaseFilename=WaterTasks-{#MyArch}-{#MyAppVersion}-Setup
+OutputBaseFilename=WaterTasks-Windows-{#MyArch}-{#MyAppVersion}-Setup
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
