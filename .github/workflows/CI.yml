@@ -225,19 +225,19 @@ jobs:
             -pointsize 100 -annotate +0+0 'WT' \
             AppDir/usr/share/icons/hicolor/256x256/apps/$APP.png 2>/dev/null || \
           python3 -c "
-import struct, zlib
-def png(w,h,rgb):
-  raw = b''
-  for y in range(h):
-    raw += b'\x00' + bytes(rgb) * w
-  def chunk(t,d):
-    c = struct.pack('>I',len(d)) + t + d
-    return c + struct.pack('>I',zlib.crc32(c) & 0xffffffff)
-  ihdr = struct.pack('>IIBBBBB',w,h,8,2,0,0,0)
-  return b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR',ihdr) + chunk(b'IDAT',zlib.compress(raw)) + chunk(b'IEND',b'')
-with open('AppDir/usr/share/icons/hicolor/256x256/apps/$APP.png','wb') as f:
-  f.write(png(256,256,(33,150,243)))
-"
+          import struct, zlib
+          def png(w,h,rgb):
+            raw = b''
+            for y in range(h):
+              raw += b'\x00' + bytes(rgb) * w
+            def chunk(t,d):
+              c = struct.pack('>I',len(d)) + t + d
+              return c + struct.pack('>I',zlib.crc32(c) & 0xffffffff)
+            ihdr = struct.pack('>IIBBBBB',w,h,8,2,0,0,0)
+            return b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR',ihdr) + chunk(b'IDAT',zlib.compress(raw)) + chunk(b'IEND',b'')
+          with open('AppDir/usr/share/icons/hicolor/256x256/apps/$APP.png','wb') as f:
+            f.write(png(256,256,(33,150,243)))
+          "
           ln -sf ../usr/share/icons/hicolor/256x256/apps/$APP.png AppDir/$APP.png
 
           ./appimagetool/AppRun AppDir WaterTasks-$ARCH-$VERSION.AppImage
@@ -307,19 +307,19 @@ with open('AppDir/usr/share/icons/hicolor/256x256/apps/$APP.png','wb') as f:
 
           mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
           python3 -c "
-import struct, zlib
-def png(w,h,rgb):
-  raw = b''
-  for y in range(h):
-    raw += b'\x00' + bytes(rgb) * w
-  def chunk(t,d):
-    c = struct.pack('>I',len(d)) + t + d
-    return c + struct.pack('>I',zlib.crc32(c) & 0xffffffff)
-  ihdr = struct.pack('>IIBBBBB',w,h,8,2,0,0,0)
-  return b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR',ihdr) + chunk(b'IDAT',zlib.compress(raw)) + chunk(b'IEND',b'')
-with open('AppDir/usr/share/icons/hicolor/256x256/apps/$APP.png','wb') as f:
-  f.write(png(256,256,(33,150,243)))
-"
+          import struct, zlib
+          def png(w,h,rgb):
+            raw = b''
+            for y in range(h):
+              raw += b'\x00' + bytes(rgb) * w
+            def chunk(t,d):
+              c = struct.pack('>I',len(d)) + t + d
+              return c + struct.pack('>I',zlib.crc32(c) & 0xffffffff)
+            ihdr = struct.pack('>IIBBBBB',w,h,8,2,0,0,0)
+            return b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR',ihdr) + chunk(b'IDAT',zlib.compress(raw)) + chunk(b'IEND',b'')
+          with open('AppDir/usr/share/icons/hicolor/256x256/apps/$APP.png','wb') as f:
+            f.write(png(256,256,(33,150,243)))
+          "
           ln -sf ../usr/share/icons/hicolor/256x256/apps/$APP.png AppDir/$APP.png
 
           ./appimagetool/AppRun AppDir WaterTasks-$ARCH-$VERSION.AppImage
