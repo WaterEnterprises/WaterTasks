@@ -51,27 +51,27 @@ jobs:
         run: flutter build appbundle --release
 
       - name: Rename AAB
-        run: mv build/app/outputs/bundle/release/app-release.aab app-Android.aab
+        run:           mv build/app/outputs/bundle/release/app-release.aab WaterTasks-Android.aab
 
       - name: Build Universal APK
         run: flutter build apk --release
 
       - name: Rename Universal APK
-        run: mv build/app/outputs/flutter-apk/app-release.apk app-Android-Universal.apk
+        run:           mv build/app/outputs/flutter-apk/app-release.apk WaterTasks-Android-Universal.apk
 
       - name: Build Split APKs
         run: flutter build apk --release --split-per-abi
 
       - name: Rename Split APKs
         run: |
-          mv build/app/outputs/flutter-apk/app-arm64-v8a-release.apk app-Android-arm64.apk
-          mv build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk app-Android-armv7.apk
-          mv build/app/outputs/flutter-apk/app-x86_64-release.apk app-Android-x86.apk
+          mv build/app/outputs/flutter-apk/app-arm64-v8a-release.apk WaterTasks-Android-arm64.apk
+          mv build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk WaterTasks-Android-armv7.apk
+          mv build/app/outputs/flutter-apk/app-x86_64-release.apk WaterTasks-Android-x86.apk
 
       - uses: actions/upload-artifact@v7.0.1
         with:
           name: Android-Builds
-          path: app-Android*
+          path: WaterTasks-Android*
 
   # ---------------------------------------------------
   # iOS — App Store (IPA, unsigned fallback)
@@ -121,9 +121,9 @@ jobs:
       - name: Rename / Compress IPA
         run: |
           if [ -n "$P12_BASE64" ]; then
-            mv build/ios/ipa/*.ipa app-iOS.ipa
+            mv build/ios/ipa/*.ipa WaterTasks-iOS.ipa
           else
-            zip -r app-iOS-unsigned.zip build/ios
+            zip -r WaterTasks-iOS-unsigned.zip build/ios
           fi
         env:
           P12_BASE64: ${{ secrets.P12_BASE64 }}
@@ -139,8 +139,8 @@ jobs:
           name: iOS-Builds
           if-no-files-found: ignore
           path: |
-            app-iOS.ipa
-            app-iOS-unsigned.zip
+            WaterTasks-iOS.ipa
+            WaterTasks-iOS-unsigned.zip
 
   # ---------------------------------------------------
   # macOS — Desktop (.app.zip)
@@ -435,12 +435,12 @@ jobs:
 
       - name: Compress Web Build
         run: |
-          cd build/web && zip -r ../../app-Web.zip .
+          cd build/web && zip -r ../../WaterTasks-Web.zip .
 
       - uses: actions/upload-artifact@v7.0.1
         with:
           name: Web-Build
-          path: app-Web.zip
+          path: WaterTasks-Web.zip
 
   # ---------------------------------------------------
   # AUTOMATIC RELEASE
