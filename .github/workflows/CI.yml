@@ -248,7 +248,7 @@ jobs:
           with open('AppDir/usr/share/icons/hicolor/256x256/apps/$APP.png','wb') as f:
             f.write(png(256,256,(33,150,243)))
           "
-          ln -sf ../usr/share/icons/hicolor/256x256/apps/$APP.png AppDir/$APP.png
+          cp AppDir/usr/share/icons/hicolor/256x256/apps/$APP.png AppDir/$APP.png
 
           ./appimagetool/AppRun AppDir WaterTasks-$ARCH-$VERSION.AppImage
 
@@ -331,7 +331,7 @@ jobs:
           with open('AppDir/usr/share/icons/hicolor/256x256/apps/$APP.png','wb') as f:
             f.write(png(256,256,(33,150,243)))
           "
-          ln -sf ../usr/share/icons/hicolor/256x256/apps/$APP.png AppDir/$APP.png
+          cp AppDir/usr/share/icons/hicolor/256x256/apps/$APP.png AppDir/$APP.png
 
           ./appimagetool/AppRun AppDir WaterTasks-$ARCH-$VERSION.AppImage
 
