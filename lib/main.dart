@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:edge_to_edge_resolver/edge_to_edge_resolver.dart';
 import 'providers/task_provider.dart';
 import 'screens/main_shell.dart';
 import 'screens/focus_screen.dart';
@@ -184,7 +184,15 @@ void main() async {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
   }
-  EdgeToEdgeResolver.setNavigationBarColor(color: const Color(0xFF5C3199));
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    systemNavigationBarColor: Color(0xFF5C3199),
+    systemNavigationBarDividerColor: Colors.transparent,
+    systemNavigationBarContrastEnforced: false,
+    systemNavigationBarIconBrightness: Brightness.light,
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.light,
+  ));
   runApp(const WaterTasksApp());
 
   // Defer non-critical init to after first frame so app opens instantly
@@ -232,26 +240,24 @@ class WaterTasksApp extends StatelessWidget {
         themeMode: ThemeMode.dark,
         home: const MainShell(),
         builder: (context, child) {
-          return EdgeToEdgeResolverWidget(
-            child: Stack(
-              children: [
-                Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Color(0xFF0A1628),
-                        Color(0xFF0D1B2A),
-                        Color(0xFF1A237E),
-                        Color(0xFF4A148C),
-                      ],
-                    ),
+          return Stack(
+            children: [
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xFF0A1628),
+                      Color(0xFF0D1B2A),
+                      Color(0xFF1A237E),
+                      Color(0xFF4A148C),
+                    ],
                   ),
                 ),
-                child!,
-              ],
-            ),
+              ),
+              child!,
+            ],
           );
         },
       ),
