@@ -1,7 +1,7 @@
 name: water_tasks
 description: "A gamified task management app that helps you stay focused and build productivity streaks."
 publish_to: 'none'
-version: 1.0.0
+version: 1.1.0
 
 environment:
   sdk: ^3.10.4
@@ -20,6 +20,8 @@ dependencies:
   window_manager: ^0.4.3
   system_tray: ^2.0.3
   sqflite_common_ffi: ^2.3.4+4
+  file_picker: ^8.3.0
+  edge_to_edge_resolver: ^1.0.2
 
 dev_dependencies:
   flutter_test:

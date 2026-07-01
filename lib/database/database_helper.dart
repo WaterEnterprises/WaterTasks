@@ -22,7 +22,7 @@ class DatabaseHelper {
     final path = join(dbPath, 'water_tasks.db');
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
@@ -43,6 +43,14 @@ class DatabaseHelper {
       await db.execute(
         'ALTER TABLE sessions ADD COLUMN last_check_in_time TEXT',
       );
+    }
+    if (oldVersion < 4) {
+      await db.execute('''
+        CREATE TABLE settings (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL
+        )
+      ''');
     }
   }
 
@@ -79,6 +87,13 @@ class DatabaseHelper {
         check_in_count INTEGER DEFAULT 0,
         last_check_in_time TEXT,
         FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
       )
     ''');
   }
@@ -198,6 +213,54 @@ class DatabaseHelper {
   Future<int> deleteSession(int id) async {
     final db = await database;
     return await db.delete('sessions', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // --- Settings ---
+
+  Future<String?> getSetting(String key) async {
+    final db = await database;
+    final maps = await db.query('settings', where: 'key = ?', whereArgs: [key]);
+    if (maps.isEmpty) return null;
+    return maps.first['value'] as String;
+  }
+
+  Future<void> setSetting(String key, String value) async {
+    final db = await database;
+    await db.insert('settings', {'key': key, 'value': value},
+        conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  // --- Export / Import ---
+
+  Future<List<Map<String, dynamic>>> exportAll() async {
+    final db = await database;
+    final lists = await db.query('task_lists');
+    final tasks = await db.query('tasks');
+    final sessions = await db.query('sessions');
+    final settings = await db.query('settings');
+    return [
+      {'table': 'task_lists', 'rows': lists},
+      {'table': 'tasks', 'rows': tasks},
+      {'table': 'sessions', 'rows': sessions},
+      {'table': 'settings', 'rows': settings},
+    ];
+  }
+
+  Future<void> importAll(List<Map<String, dynamic>> data) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('sessions');
+      await txn.delete('tasks');
+      await txn.delete('task_lists');
+      await txn.delete('settings');
+      for (final tableData in data) {
+        final table = tableData['table'] as String;
+        final rows = tableData['rows'] as List<dynamic>;
+        for (final row in rows) {
+          await txn.insert(table, row as Map<String, dynamic>);
+        }
+      }
+    });
   }
 
   // --- Statistics ---

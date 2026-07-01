@@ -119,8 +119,9 @@ class _FocusScreenState extends State<FocusScreen>
     _blinkController.repeat(reverse: true);
     _pulseController.repeat(reverse: true);
     HapticFeedback.heavyImpact();
-    NotificationService().startSiren();
-    final task = context.read<TaskProvider>().activeTask;
+    final provider = context.read<TaskProvider>();
+    NotificationService().startSiren(toneType: provider.toneType);
+    final task = provider.activeTask;
     if (task != null) {
       BackgroundNotificationService().startBuzzing(task.title);
     }

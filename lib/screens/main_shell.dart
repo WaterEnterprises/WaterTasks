@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../widgets/glass_card.dart';
 import 'home_screen.dart';
 import 'dashboard_screen.dart';
+import 'settings_screen.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -20,7 +21,9 @@ class _MainShellState extends State<MainShell> {
     return Scaffold(
       body: _currentIndex == 0
           ? const HomeScreen()
-          : const DashboardScreen(),
+          : _currentIndex == 1
+              ? const DashboardScreen()
+              : const SettingsScreen(),
       bottomNavigationBar: GlassContainer(
         borderRadius: BorderRadius.zero,
         opacity: 0.12,
@@ -44,6 +47,13 @@ class _MainShellState extends State<MainShell> {
                   label: 'Performance',
                   selected: _currentIndex == 1,
                   onTap: () => setState(() => _currentIndex = 1),
+                  colors: colors,
+                ),
+                _NavItem(
+                  icon: Icons.settings_rounded,
+                  label: 'Settings',
+                  selected: _currentIndex == 2,
+                  onTap: () => setState(() => _currentIndex = 2),
                   colors: colors,
                 ),
               ],

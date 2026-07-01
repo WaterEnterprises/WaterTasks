@@ -4,6 +4,7 @@ import '../models/task_list_model.dart';
 import '../models/task_model.dart';
 import '../models/session_model.dart';
 import '../services/background_notification_service.dart';
+import '../services/notification_service.dart';
 import '../services/system_tray_service.dart';
 
 class TaskProvider extends ChangeNotifier {
@@ -16,6 +17,7 @@ class TaskProvider extends ChangeNotifier {
   TaskModel? _activeTask;
   TaskListModel? _activeTaskList;
   bool _isLoading = false;
+  ToneType _toneType = ToneType.buzzer;
 
   List<TaskListModel> get taskLists => _taskLists;
   List<TaskModel> get currentTasks => _currentTasks;
@@ -24,6 +26,24 @@ class TaskProvider extends ChangeNotifier {
   TaskListModel? get activeTaskList => _activeTaskList;
   bool get isLoading => _isLoading;
   bool get hasActiveSession => _activeSession != null;
+  ToneType get toneType => _toneType;
+
+  Future<void> loadSettings() async {
+    final value = await _db.getSetting('tone_type');
+    if (value != null) {
+      _toneType = ToneType.values.firstWhere(
+        (e) => e.name == value,
+        orElse: () => ToneType.buzzer,
+      );
+    }
+    notifyListeners();
+  }
+
+  Future<void> setToneType(ToneType type) async {
+    _toneType = type;
+    await _db.setSetting('tone_type', type.name);
+    notifyListeners();
+  }
 
   Future<void> loadTaskLists() async {
     _isLoading = true;
@@ -82,6 +102,7 @@ class TaskProvider extends ChangeNotifier {
   }
 
   Future<void> checkActiveSession() async {
+    await loadSettings();
     _activeSession = await _db.getActiveSession();
     if (_activeSession != null) {
       final allTasks = await _db.getAllTasks();
